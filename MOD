@@ -67,8 +67,7 @@ local secretLabel =
 local vignetteLabel =
 	baseFrame:WaitForChild("VignetteLabel")
 
--- StaticLabel and ALL of its children are
--- deliberately never modified.
+-- DO NOT TOUCH THIS OR ANYTHING UNDER IT.
 local staticLabel =
 	baseFrame:WaitForChild("StaticLabel")
 
@@ -117,6 +116,7 @@ local function enforceGuiLock()
 
 			obj.Active = false
 			obj.TextEditable = false
+
 		end
 	end
 end
@@ -212,7 +212,7 @@ level2:Stop()
 level2.Volume = 0
 
 --==================================================
--- SPEECH FUNCTION
+-- SPEECH
 --==================================================
 
 local function say(text, duration, playbackSpeed)
@@ -292,7 +292,6 @@ say(
 level1.Volume = 0
 level1.PlaybackSpeed = 1
 level1.Looped = true
-
 level1:Play()
 
 say(
@@ -364,7 +363,7 @@ say(
 )
 
 --==================================================
--- FADE MUSIC OUT
+-- FADE LEVEL 1 OUT
 --==================================================
 
 local musicFade =
@@ -412,10 +411,6 @@ say(
 	"Something is about to change.",
 	3
 )
-
---==================================================
--- SILENCE / ELLIPSIS
---==================================================
 
 say(
 	"...",
@@ -489,7 +484,7 @@ local originalScale =
 	zoomScale.Scale
 
 --==================================================
--- ZOOM IN + FADE BLACK
+-- ZOOM IN + BLACK
 --==================================================
 
 local zoomIn =
@@ -535,14 +530,14 @@ blackScreen.BackgroundTransparency =
 	0
 
 --==================================================
--- HORROR CHANGES WHILE BLACK
+-- HORROR CHANGES
 --==================================================
 
--- Character voice becomes slower.
+-- Character voice.
 characterVoice.PlaybackSpeed =
 	0.4
 
--- Level 1 becomes slower.
+-- Level 1 music.
 level1.PlaybackSpeed =
 	0.3
 
@@ -558,6 +553,7 @@ if layer1Background
 
 	layer1Background.BackgroundTransparency =
 		1
+
 end
 
 --==================================================
@@ -589,8 +585,10 @@ redBackground.Size =
 redBackground.Position =
 	UDim2.fromScale(0, 0)
 
+-- IMPORTANT:
+-- Red background is behind the horror UI.
 redBackground.ZIndex =
-	1
+	0
 
 redBackground.Visible =
 	true
@@ -599,7 +597,7 @@ redBackground.Parent =
 	layer1Group
 
 --==================================================
--- EYE SCARE
+-- EYESCAPE
 --==================================================
 
 if eyeScare
@@ -614,14 +612,56 @@ if eyeScare
 end
 
 --==================================================
+-- BODY / CHARACTER BLACKOUT
+--==================================================
+
+local blackParts = {
+
+	"Head",
+	"Torso",
+	"LeftFoot",
+	"RightFoot",
+	"RightHand",
+	"LeftHand"
+
+}
+
+for _, partName in ipairs(blackParts) do
+
+	local part =
+		layer1Group:FindFirstChild(
+			partName,
+			true
+		)
+
+	if part then
+
+		if part:IsA("ImageLabel")
+			or part:IsA("ImageButton") then
+
+			part.ImageColor3 =
+				Color3.new(0, 0, 0)
+
+		elseif part:IsA("GuiObject") then
+
+			part.BackgroundColor3 =
+				Color3.new(0, 0, 0)
+
+		end
+
+	end
+end
+
+--==================================================
 -- VIGNETTE
 --==================================================
 
--- StaticLabel is NOT touched.
+-- StaticLabel and its children are NEVER touched.
 
 vignetteLabel.Visible =
 	true
 
+-- Keep the vignette's background transparent.
 vignetteLabel.BackgroundTransparency =
 	1
 
@@ -629,7 +669,7 @@ if vignetteLabel:IsA("ImageLabel")
 	or vignetteLabel:IsA("ImageButton") then
 
 	vignetteLabel.ImageTransparency =
-		0
+	0
 
 end
 
@@ -637,7 +677,7 @@ if vignetteLabel:IsA("TextLabel")
 	or vignetteLabel:IsA("TextButton") then
 
 	vignetteLabel.TextTransparency =
-		0
+	0
 
 end
 
@@ -670,10 +710,11 @@ for _, obj in ipairs(
 			0
 
 	end
+
 end
 
 --==================================================
--- KEEP VIGNETTE ENABLED
+-- PERMANENT VIGNETTE
 --==================================================
 
 local permanentVignetteLock
@@ -685,6 +726,7 @@ permanentVignetteLock =
 			or not vignetteLabel.Parent then
 
 			return
+
 		end
 
 		vignetteLabel.Visible =
@@ -722,6 +764,7 @@ permanentVignetteLock =
 					0
 
 			end
+
 		end
 
 	end)
@@ -825,15 +868,12 @@ if eyeScare
 
 end
 
-vignetteLabel.Visible =
-	true
-
-vignetteLabel.BackgroundTransparency =
-	1
-
--- Red background remains permanently.
+-- Red background stays at ZIndex 0.
 redBackground.Visible =
 	true
+
+redBackground.ZIndex =
+	0
 
 redBackground.BackgroundTransparency =
 	0
@@ -844,6 +884,13 @@ redBackground.BackgroundColor3 =
 		0,
 		0
 	)
+
+-- Vignette stays enabled permanently.
+vignetteLabel.Visible =
+	true
+
+vignetteLabel.BackgroundTransparency =
+	1
 
 --==================================================
 -- UNLOCK
