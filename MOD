@@ -27,12 +27,14 @@ local baseFrame =
 local layer1Group =
 	baseFrame:WaitForChild("Layer1Group")
 
+local layer2Group =
+	baseFrame:WaitForChild("Layer2Group")
+
 local dialogueLabel =
 	layer1Group:FindFirstChild("DialogueLabel", true)
 
 local dialogueFrame =
-	baseFrame
-		:WaitForChild("Layer2Group")
+	layer2Group
 		:WaitForChild("BaseGroup")
 		:WaitForChild("GameFrame")
 		:WaitForChild("DialogueFrame")
@@ -44,15 +46,19 @@ local characterVoice =
 	mainUI:FindFirstChild("Character_Voice", true)
 
 if not dialogueLabel then
+	warn("DialogueLabel not found")
 	return
 end
 
-if not characterVoice or not characterVoice:IsA("Sound") then
+if not characterVoice
+	or not characterVoice:IsA("Sound") then
+
+	warn("Character_Voice not found")
 	return
 end
 
 --==================================================
--- HORROR OBJECTS
+-- CHARACTER / HORROR OBJECTS
 --==================================================
 
 local head =
@@ -67,12 +73,19 @@ local secretLabel =
 local vignetteLabel =
 	baseFrame:WaitForChild("VignetteLabel")
 
--- DO NOT TOUCH THIS OR ANYTHING UNDER IT.
+-- DO NOT MODIFY THIS OR ANYTHING INSIDE IT.
 local staticLabel =
 	baseFrame:WaitForChild("StaticLabel")
 
-local eyeScare =
-	layer1Group:FindFirstChild("EyeScare", true)
+local eyesScare =
+	layer1Group:FindFirstChild("EyesScare", true)
+
+--==================================================
+-- BRAIN MUSIC
+--==================================================
+
+local brainLayerMusic =
+	layer2Group:WaitForChild("BrainLayer_Music")
 
 --==================================================
 -- INPUT LOCK
@@ -168,7 +181,7 @@ local guiLockConnection =
 	end)
 
 --==================================================
--- INPUT SINK
+-- HIGH PRIORITY INPUT SINK
 --==================================================
 
 local INPUT_LOCK_NAME =
@@ -210,6 +223,10 @@ level1.PlaybackSpeed = 1
 
 level2:Stop()
 level2.Volume = 0
+
+brainLayerMusic:Stop()
+brainLayerMusic.Looped = true
+brainLayerMusic.Volume = 0
 
 --==================================================
 -- SPEECH
@@ -342,7 +359,7 @@ say(
 )
 
 --==================================================
--- LEVEL 2
+-- LEVEL 2 OFF
 --==================================================
 
 level2:Stop()
@@ -409,11 +426,6 @@ say(
 
 say(
 	"Something is about to change.",
-	3
-)
-
-say(
-	"...",
 	3
 )
 
@@ -530,31 +542,10 @@ blackScreen.BackgroundTransparency =
 	0
 
 --==================================================
--- HORROR CHANGES
+-- HORROR STATE BEGINS
 --==================================================
 
--- Character voice.
-characterVoice.PlaybackSpeed =
-	0.4
-
--- Level 1 music.
-level1.PlaybackSpeed =
-	0.3
-
---==================================================
--- LAYER 1 BACKGROUND
---==================================================
-
-local layer1Background =
-	layer1Group:FindFirstChild("Background")
-
-if layer1Background
-	and layer1Background:IsA("GuiObject") then
-
-	layer1Background.BackgroundTransparency =
-		1
-
-end
+local horrorStateActive = true
 
 --==================================================
 -- RED BACKGROUND
@@ -585,8 +576,6 @@ redBackground.Size =
 redBackground.Position =
 	UDim2.fromScale(0, 0)
 
--- IMPORTANT:
--- Red background is behind the horror UI.
 redBackground.ZIndex =
 	0
 
@@ -597,103 +586,17 @@ redBackground.Parent =
 	layer1Group
 
 --==================================================
--- EYESCAPE
+-- LAYER 1 BACKGROUND
 --==================================================
 
-if eyeScare
-	and eyeScare:IsA("GuiObject") then
-
-	eyeScare.Visible =
-		true
-
-	eyeScare.ZIndex =
-		2
-
-end
+local layer1Background =
+	layer1Group:FindFirstChild("Background")
 
 --==================================================
--- BODY / CHARACTER BLACKOUT
+-- HORROR STATE FUNCTION
 --==================================================
 
-local blackParts = {
-
-	"Head",
-	"Torso",
-	"LeftFoot",
-	"RightFoot",
-	"RightHand",
-	"LeftHand"
-
-}
-
-for _, partName in ipairs(blackParts) do
-
-	local part =
-		layer1Group:FindFirstChild(
-			partName,
-			true
-		)
-
-	if part then
-
-		if part:IsA("ImageLabel")
-			or part:IsA("ImageButton") then
-
-			part.ImageColor3 =
-				Color3.new(0, 0, 0)
-
-		elseif part:IsA("GuiObject") then
-
-			part.BackgroundColor3 =
-				Color3.new(0, 0, 0)
-
-		end
-
-	end
-end
-
---==================================================
--- VIGNETTE
---==================================================
-
--- StaticLabel and its children are NEVER touched.
-
-vignetteLabel.Visible =
-	true
-
--- Keep the vignette's background transparent.
-vignetteLabel.BackgroundTransparency =
-	1
-
-if vignetteLabel:IsA("ImageLabel")
-	or vignetteLabel:IsA("ImageButton") then
-
-	vignetteLabel.ImageTransparency =
-	0
-
-end
-
-if vignetteLabel:IsA("TextLabel")
-	or vignetteLabel:IsA("TextButton") then
-
-	vignetteLabel.TextTransparency =
-	0
-
-end
-
-for _, obj in ipairs(
-	vignetteLabel:GetDescendants()
-) do
-
-	if obj:IsA("GuiObject") then
-
-		obj.Visible =
-			true
-
-		obj.BackgroundTransparency =
-			1
-
-	end
+local function setTransparencyZero(obj)
 
 	if obj:IsA("ImageLabel")
 		or obj:IsA("ImageButton") then
@@ -710,61 +613,260 @@ for _, obj in ipairs(
 			0
 
 	end
-
 end
 
---==================================================
--- PERMANENT VIGNETTE
---==================================================
+local function forceHorrorState()
 
-local permanentVignetteLock
+	if not horrorStateActive then
+		return
+	end
 
-permanentVignetteLock =
-	RunService.Heartbeat:Connect(function()
+	--==============================================
+	-- CHARACTER VOICE
+	--==============================================
 
-		if not vignetteLabel
-			or not vignetteLabel.Parent then
+	characterVoice.PlaybackSpeed =
+		0.4
 
-			return
+	--==============================================
+	-- LEVEL 1
+	--==============================================
+
+	level1:Stop()
+	level1.Volume =
+		0
+
+	level1.PlaybackSpeed =
+		0.3
+
+	--==============================================
+	-- LEVEL 2
+	--==============================================
+
+	level2:Stop()
+	level2.Volume =
+		0
+
+	--==============================================
+	-- STOP GAMEOVER / FINAL SOUNDS
+	--==============================================
+
+	for _, obj in ipairs(
+		mainUI:GetDescendants()
+	) do
+
+		if obj:IsA("Sound") then
+
+			local lowerName =
+				string.lower(obj.Name)
+
+			if lowerName == "gameover"
+				or lowerName == "gameover_sound"
+				or lowerName == "gamesover"
+				or lowerName == "final"
+				or lowerName == "finalsound"
+				or lowerName == "final_sound" then
+
+				obj:Stop()
+				obj.Volume =
+					0
+
+			end
+		end
+	end
+
+	--==============================================
+	-- BRAIN LAYER MUSIC
+	--==============================================
+
+	brainLayerMusic.Looped =
+		true
+
+	brainLayerMusic.Volume =
+		1
+
+	if not brainLayerMusic.IsPlaying then
+		brainLayerMusic:Play()
+	end
+
+	--==============================================
+	-- LAYER 1 BACKGROUND
+	--==============================================
+
+	if layer1Background
+		and layer1Background:IsA("GuiObject") then
+
+		layer1Background.BackgroundTransparency =
+			1
+
+	end
+
+	--==============================================
+	-- SECRET LABEL
+	--==============================================
+
+	secretLabel.Visible =
+		true
+
+	setTransparencyZero(
+		secretLabel
+	)
+
+	--==============================================
+	-- EYES SCARE
+	--==============================================
+
+	if eyesScare
+		and eyesScare:IsA("GuiObject") then
+
+		eyesScare.Visible =
+			true
+
+		eyesScare.ZIndex =
+			2
+
+		setTransparencyZero(
+			eyesScare
+		)
+
+	end
+
+	--==============================================
+	-- BLACK CHARACTER PARTS
+	--==============================================
+
+	local blackParts = {
+
+		"Head",
+		"Torso",
+		"LeftFoot",
+		"RightFoot",
+		"RightHand",
+		"LeftHand"
+
+	}
+
+	for _, partName in ipairs(
+		blackParts
+	) do
+
+		local part =
+			layer1Group:FindFirstChild(
+				partName,
+				true
+			)
+
+		if part then
+
+			if part:IsA("ImageLabel")
+				or part:IsA("ImageButton") then
+
+				part.ImageColor3 =
+					Color3.new(
+						0,
+						0,
+						0
+					)
+
+			end
+		end
+	end
+
+	--==============================================
+	-- RED BACKGROUND
+	--==============================================
+
+	redBackground.Visible =
+		true
+
+	redBackground.ZIndex =
+		0
+
+	redBackground.BackgroundTransparency =
+		0
+
+	redBackground.BackgroundColor3 =
+		Color3.fromRGB(
+			255,
+			0,
+			0
+		)
+
+	--==============================================
+	-- VIGNETTE
+	--==============================================
+
+	vignetteLabel.Visible =
+		true
+
+	vignetteLabel.BackgroundTransparency =
+		1
+
+	if vignetteLabel:IsA("ImageLabel")
+		or vignetteLabel:IsA("ImageButton") then
+
+		vignetteLabel.ImageTransparency =
+			0
+
+	end
+
+	if vignetteLabel:IsA("TextLabel")
+		or vignetteLabel:IsA("TextButton") then
+
+		vignetteLabel.TextTransparency =
+			0
+
+	end
+
+	for _, obj in ipairs(
+		vignetteLabel:GetDescendants()
+	) do
+
+		if obj:IsA("GuiObject") then
+
+			obj.Visible =
+				true
+
+			obj.BackgroundTransparency =
+				1
 
 		end
 
-		vignetteLabel.Visible =
-			true
+		if obj:IsA("ImageLabel")
+			or obj:IsA("ImageButton") then
 
-		vignetteLabel.BackgroundTransparency =
-			1
+			obj.ImageTransparency =
+				0
 
-		for _, obj in ipairs(
-			vignetteLabel:GetDescendants()
-		) do
+		end
 
-			if obj:IsA("GuiObject") then
+		if obj:IsA("TextLabel")
+			or obj:IsA("TextButton") then
 
-				obj.Visible =
-					true
+			obj.TextTransparency =
+				0
 
-				obj.BackgroundTransparency =
-					1
+		end
+	end
+end
 
-			end
+--==================================================
+-- APPLY HORROR CHANGES WHILE BLACK
+--==================================================
 
-			if obj:IsA("ImageLabel")
-				or obj:IsA("ImageButton") then
+forceHorrorState()
 
-				obj.ImageTransparency =
-					0
+--==================================================
+-- PERMANENT HORROR ENFORCER
+--==================================================
 
-			end
+local permanentHorrorLock
 
-			if obj:IsA("TextLabel")
-				or obj:IsA("TextButton") then
+permanentHorrorLock =
+	RunService.Heartbeat:Connect(function()
 
-				obj.TextTransparency =
-					0
-
-			end
-
+		if horrorStateActive then
+			forceHorrorState()
 		end
 
 	end)
@@ -818,10 +920,6 @@ blackOut:Play()
 
 blackOut.Completed:Wait()
 
---==================================================
--- REMOVE TRANSITION
---==================================================
-
 blackScreen:Destroy()
 
 if createdScale
@@ -837,63 +935,23 @@ else
 end
 
 --==================================================
--- FINAL HORROR STATE
+-- POST-TRANSITION DIALOGUE
 --==================================================
 
-characterVoice.PlaybackSpeed =
+say(
+	"...",
+	3,
 	0.4
-
-level1.PlaybackSpeed =
-	0.3
-
-level1:Stop()
-level1.Volume = 0
-
-if layer1Background
-	and layer1Background:IsA("GuiObject") then
-
-	layer1Background.BackgroundTransparency =
-		1
-
-end
-
-if eyeScare
-	and eyeScare:IsA("GuiObject") then
-
-	eyeScare.Visible =
-		true
-
-	eyeScare.ZIndex =
-		2
-
-end
-
--- Red background stays at ZIndex 0.
-redBackground.Visible =
-	true
-
-redBackground.ZIndex =
-	0
-
-redBackground.BackgroundTransparency =
-	0
-
-redBackground.BackgroundColor3 =
-	Color3.fromRGB(
-		255,
-		0,
-		0
-	)
-
--- Vignette stays enabled permanently.
-vignetteLabel.Visible =
-	true
-
-vignetteLabel.BackgroundTransparency =
-	1
+)
 
 --==================================================
--- UNLOCK
+-- KEEP HORROR STATE ACTIVE
+--==================================================
+
+forceHorrorState()
+
+--==================================================
+-- UNLOCK INPUT
 --==================================================
 
 interactionLocked =
