@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ContextActionService = game:GetService("ContextActionService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -224,11 +225,12 @@ level1.PlaybackSpeed = 1
 level2:Stop()
 level2.Volume = 0
 
--- BrainLayer_Music stays stopped until the horror
--- transition has completed.
+-- Do not play BrainLayer_Music yet.
 brainLayerMusic:Stop()
 brainLayerMusic.Looped = true
 brainLayerMusic.Volume = 0
+brainLayerMusic.PlaybackSpeed = 1
+brainLayerMusic.TimePosition = 0
 
 --==================================================
 -- SPEECH
@@ -544,7 +546,7 @@ blackScreen.BackgroundTransparency =
 	0
 
 --==================================================
--- HORROR STATE BEGINS
+-- HORROR STATE
 --==================================================
 
 local horrorStateActive = true
@@ -650,7 +652,7 @@ local function forceHorrorState()
 		0
 
 	--==============================================
-	-- STOP GAMEOVER / FINAL SOUNDS
+	-- STOP GAMEOVER / FINAL
 	--==============================================
 
 	for _, obj in ipairs(
@@ -788,7 +790,6 @@ local function forceHorrorState()
 	vignetteLabel.Visible =
 		true
 
-	-- Keep the vignette's background transparent.
 	vignetteLabel.BackgroundTransparency =
 		1
 
@@ -847,23 +848,95 @@ end
 forceHorrorState()
 
 --==================================================
--- START BRAIN LAYER MUSIC
+-- ROBUST BRAIN MUSIC START
 --==================================================
 
-brainLayerMusic.Looped =
-	true
+local function prepareBrainMusic()
 
-brainLayerMusic.Volume =
-	1
+	brainLayerMusic.Looped = true
+	brainLayerMusic.Volume = 1
+	brainLayerMusic.PlaybackSpeed = 1
 
-if not brainLayerMusic.IsLoaded then
-	brainLayerMusic.Loaded:Wait()
+	-- Reset any previous position.
+	pcall(function()
+		brainLayerMusic.TimePosition = 0
+	end)
+
+	-- Make sure a muted SoundGroup cannot silence it.
+	local group = brainLayerMusic.SoundGroup
+
+	if group then
+		group.Volume = 1
+	end
+
+	-- Wait for the asset to become available.
+	if not brainLayerMusic.IsLoaded then
+
+		local loaded = false
+
+		local connection
+
+		connection =
+			brainLayerMusic.Loaded:Connect(function()
+				loaded = true
+			end)
+
+		local startTime = os.clock()
+
+		while not loaded
+			and not brainLayerMusic.IsLoaded
+			and os.clock() - startTime < 10 do
+
+			task.wait(0.1)
+
+		end
+
+		if connection then
+			connection:Disconnect()
+		end
+	end
+
+	-- Start it directly.
+	brainLayerMusic:Play()
+
+	-- Also request local playback from SoundService.
+	pcall(function()
+		SoundService:PlayLocalSound(
+			brainLayerMusic
+		)
+	end)
+
+	-- Give Roblox a moment to update IsPlaying.
+	task.wait(0.1)
+
+	-- One retry if the first request did not start it.
+	if not brainLayerMusic.IsPlaying then
+
+		brainLayerMusic:Stop()
+
+		pcall(function()
+			brainLayerMusic.TimePosition = 0
+		end)
+
+		brainLayerMusic.Volume = 1
+		brainLayerMusic.PlaybackSpeed = 1
+		brainLayerMusic.Looped = true
+
+		brainLayerMusic:Play()
+
+		pcall(function()
+			SoundService:PlayLocalSound(
+				brainLayerMusic
+			)
+		end)
+
+	end
 end
 
-brainLayerMusic:Play()
+prepareBrainMusic()
 
 --==================================================
--- MUSIC-ONLY PERMANENT ENFORCER
+-- MUSIC-ONLY ENFORCER
 --==================================================
 
 local permanentMusicLock
@@ -876,6 +949,7 @@ permanentMusicLock =
 		end
 
 		if not brainLayerMusic.Parent then
+
 			if permanentMusicLock then
 				permanentMusicLock:Disconnect()
 			end
@@ -883,19 +957,36 @@ permanentMusicLock =
 			return
 		end
 
-		-- BrainLayer_Music is the only music
-		-- continuously enforced here.
 		brainLayerMusic.Looped =
 			true
 
 		brainLayerMusic.Volume =
 			1
 
-		if not brainLayerMusic.IsPlaying then
-			brainLayerMusic:Play()
+		brainLayerMusic.PlaybackSpeed =
+			1
+
+		local group =
+			brainLayerMusic.SoundGroup
+
+		if group then
+			group.Volume =
+				1
 		end
 
-		-- Never allow these to resume.
+		if not brainLayerMusic.IsPlaying then
+
+			brainLayerMusic:Play()
+
+			pcall(function()
+				SoundService:PlayLocalSound(
+					brainLayerMusic
+				)
+			end)
+
+		end
+
+		-- Old music never resumes.
 		level1:Stop()
 		level1.Volume =
 			0
@@ -904,7 +995,7 @@ permanentMusicLock =
 		level2.Volume =
 			0
 
-		-- Keep GameOver / Final sounds disabled.
+		-- GameOver / Final never resume.
 		for _, obj in ipairs(
 			mainUI:GetDescendants()
 		) do
@@ -1012,14 +1103,33 @@ say(
 horrorStateActive =
 	true
 
+characterVoice.PlaybackSpeed =
+	0.4
+
 brainLayerMusic.Looped =
 	true
 
 brainLayerMusic.Volume =
 	1
 
+brainLayerMusic.PlaybackSpeed =
+	1
+
+if brainLayerMusic.SoundGroup then
+	brainLayerMusic.SoundGroup.Volume =
+	1
+end
+
 if not brainLayerMusic.IsPlaying then
+
 	brainLayerMusic:Play()
+
+	pcall(function()
+		SoundService:PlayLocalSound(
+			brainLayerMusic
+		)
+	end)
+
 end
 
 level1:Stop()
