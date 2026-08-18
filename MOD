@@ -15,11 +15,17 @@ local level2 = mainUI:WaitForChild("Level2")
 -- UI
 --==================================================
 
-local surfaceScreen = mainUI:WaitForChild("SurfaceScreen")
-local baseHolder = surfaceScreen:WaitForChild("BaseHolder")
-local baseFrame = baseHolder:WaitForChild("BaseFrame")
+local surfaceScreen =
+	mainUI:WaitForChild("SurfaceScreen")
 
-local layer1Group = baseFrame:WaitForChild("Layer1Group")
+local baseHolder =
+	surfaceScreen:WaitForChild("BaseHolder")
+
+local baseFrame =
+	baseHolder:WaitForChild("BaseFrame")
+
+local layer1Group =
+	baseFrame:WaitForChild("Layer1Group")
 
 local dialogueLabel =
 	layer1Group:FindFirstChild("DialogueLabel", true)
@@ -46,7 +52,7 @@ if not characterVoice or not characterVoice:IsA("Sound") then
 end
 
 --==================================================
--- EFFECT OBJECTS
+-- HORROR OBJECTS
 --==================================================
 
 local head =
@@ -61,19 +67,13 @@ local secretLabel =
 local vignetteLabel =
 	baseFrame:WaitForChild("VignetteLabel")
 
--- StaticLabel is intentionally NOT touched.
+-- StaticLabel and ALL of its children are
+-- deliberately never modified.
 local staticLabel =
 	baseFrame:WaitForChild("StaticLabel")
 
-local thankYou =
-	layer1Group:WaitForChild("ThankYou")
-
 local eyeScare =
 	layer1Group:FindFirstChild("EyeScare", true)
-
-if not eyeScare then
-	warn("EyeScare was not found inside Layer1Group")
-end
 
 --==================================================
 -- INPUT LOCK
@@ -91,11 +91,13 @@ local function enforceGuiLock()
 		if obj:IsA("GuiButton") then
 
 			if not lockedButtons[obj] then
+
 				lockedButtons[obj] = {
 					Active = obj.Active,
 					Selectable = obj.Selectable,
 					AutoButtonColor = obj.AutoButtonColor
 				}
+
 			end
 
 			obj.Active = false
@@ -105,10 +107,12 @@ local function enforceGuiLock()
 		elseif obj:IsA("TextBox") then
 
 			if not lockedTextBoxes[obj] then
+
 				lockedTextBoxes[obj] = {
 					Active = obj.Active,
 					TextEditable = obj.TextEditable
 				}
+
 			end
 
 			obj.Active = false
@@ -120,17 +124,31 @@ end
 local function restoreGui()
 
 	for obj, state in pairs(lockedButtons) do
+
 		if obj and obj.Parent then
-			obj.Active = state.Active
-			obj.Selectable = state.Selectable
-			obj.AutoButtonColor = state.AutoButtonColor
+
+			obj.Active =
+				state.Active
+
+			obj.Selectable =
+				state.Selectable
+
+			obj.AutoButtonColor =
+				state.AutoButtonColor
+
 		end
 	end
 
 	for obj, state in pairs(lockedTextBoxes) do
+
 		if obj and obj.Parent then
-			obj.Active = state.Active
-			obj.TextEditable = state.TextEditable
+
+			obj.Active =
+				state.Active
+
+			obj.TextEditable =
+				state.TextEditable
+
 		end
 	end
 
@@ -153,9 +171,11 @@ local guiLockConnection =
 -- INPUT SINK
 --==================================================
 
-local INPUT_LOCK_NAME = "C9HZZ_IntroInputLock"
+local INPUT_LOCK_NAME =
+	"C9HZZ_IntroInputLock"
 
 ContextActionService:BindActionAtPriority(
+
 	INPUT_LOCK_NAME,
 
 	function()
@@ -192,7 +212,7 @@ level2:Stop()
 level2.Volume = 0
 
 --==================================================
--- DIALOGUE
+-- SPEECH FUNCTION
 --==================================================
 
 local function say(text, duration, playbackSpeed)
@@ -272,6 +292,7 @@ say(
 level1.Volume = 0
 level1.PlaybackSpeed = 1
 level1.Looped = true
+
 level1:Play()
 
 say(
@@ -281,6 +302,7 @@ say(
 
 local speedTween =
 	TweenService:Create(
+
 		level1,
 
 		TweenInfo.new(
@@ -296,6 +318,7 @@ local speedTween =
 
 local volumeTween =
 	TweenService:Create(
+
 		level1,
 
 		TweenInfo.new(
@@ -327,7 +350,7 @@ level2:Stop()
 level2.Volume = 0
 
 --==================================================
--- FINAL NORMAL DIALOGUE
+-- NORMAL DIALOGUE
 --==================================================
 
 say(
@@ -341,7 +364,33 @@ say(
 )
 
 --==================================================
--- NEW DIALOGUE BEFORE TRANSITION
+-- FADE MUSIC OUT
+--==================================================
+
+local musicFade =
+	TweenService:Create(
+
+		level1,
+
+		TweenInfo.new(
+			2.5,
+			Enum.EasingStyle.Sine,
+			Enum.EasingDirection.InOut
+		),
+
+		{
+			Volume = 0
+		}
+	)
+
+musicFade:Play()
+musicFade.Completed:Wait()
+
+level1:Stop()
+level1.Volume = 0
+
+--==================================================
+-- HORROR FORESHADOWING
 --==================================================
 
 say(
@@ -365,7 +414,16 @@ say(
 )
 
 --==================================================
--- TRANSITION BLACK SCREEN
+-- SILENCE / ELLIPSIS
+--==================================================
+
+say(
+	"...",
+	3
+)
+
+--==================================================
+-- BLACK TRANSITION
 --==================================================
 
 local blackScreen =
@@ -377,9 +435,11 @@ blackScreen.Name =
 blackScreen.BackgroundColor3 =
 	Color3.new(0, 0, 0)
 
-blackScreen.BackgroundTransparency = 1
+blackScreen.BackgroundTransparency =
+	1
 
-blackScreen.BorderSizePixel = 0
+blackScreen.BorderSizePixel =
+	0
 
 blackScreen.Size =
 	UDim2.fromScale(1, 1)
@@ -387,11 +447,14 @@ blackScreen.Size =
 blackScreen.Position =
 	UDim2.fromScale(0, 0)
 
-blackScreen.ZIndex = 10000
+blackScreen.ZIndex =
+	10000
 
-blackScreen.Visible = true
+blackScreen.Visible =
+	true
 
-blackScreen.Parent = baseFrame
+blackScreen.Parent =
+	baseFrame
 
 --==================================================
 -- ZOOM
@@ -406,23 +469,27 @@ local createdScale = false
 
 if not zoomScale then
 
-	zoomScale = Instance.new("UIScale")
+	zoomScale =
+		Instance.new("UIScale")
 
 	zoomScale.Name =
 		"C9HZZTransitionScale"
 
-	zoomScale.Scale = 1
+	zoomScale.Scale =
+		1
 
-	zoomScale.Parent = baseFrame
+	zoomScale.Parent =
+		baseFrame
 
 	createdScale = true
+
 end
 
 local originalScale =
 	zoomScale.Scale
 
 --==================================================
--- ZOOM IN + BLACK
+-- ZOOM IN + FADE BLACK
 --==================================================
 
 local zoomIn =
@@ -437,7 +504,8 @@ local zoomIn =
 		),
 
 		{
-			Scale = originalScale * 1.12
+			Scale =
+				originalScale * 1.12
 		}
 	)
 
@@ -453,7 +521,8 @@ local blackIn =
 		),
 
 		{
-			BackgroundTransparency = 0
+			BackgroundTransparency =
+				0
 		}
 	)
 
@@ -462,17 +531,20 @@ blackIn:Play()
 
 zoomIn.Completed:Wait()
 
-blackScreen.BackgroundTransparency = 0
+blackScreen.BackgroundTransparency =
+	0
 
 --==================================================
--- EVERYTHING BELOW HAPPENS WHILE BLACK
+-- HORROR CHANGES WHILE BLACK
 --==================================================
 
 -- Character voice becomes slower.
-characterVoice.PlaybackSpeed = 0.4
+characterVoice.PlaybackSpeed =
+	0.4
 
--- Level 1 becomes much slower.
-level1.PlaybackSpeed = 0.3
+-- Level 1 becomes slower.
+level1.PlaybackSpeed =
+	0.3
 
 --==================================================
 -- LAYER 1 BACKGROUND
@@ -484,19 +556,47 @@ local layer1Background =
 if layer1Background
 	and layer1Background:IsA("GuiObject") then
 
-	layer1Background.BackgroundTransparency = 1
+	layer1Background.BackgroundTransparency =
+		1
 end
 
 --==================================================
--- THANK YOU
+-- RED BACKGROUND
 --==================================================
 
-thankYou.BackgroundTransparency = 0
+local redBackground =
+	Instance.new("Frame")
 
-thankYou.BackgroundColor3 =
-	Color3.fromRGB(255, 0, 0)
+redBackground.Name =
+	"C9HZZRedBackground"
 
-thankYou.Visible = true
+redBackground.BackgroundColor3 =
+	Color3.fromRGB(
+		255,
+		0,
+		0
+	)
+
+redBackground.BackgroundTransparency =
+	0
+
+redBackground.BorderSizePixel =
+	0
+
+redBackground.Size =
+	UDim2.fromScale(1, 1)
+
+redBackground.Position =
+	UDim2.fromScale(0, 0)
+
+redBackground.ZIndex =
+	1
+
+redBackground.Visible =
+	true
+
+redBackground.Parent =
+	layer1Group
 
 --==================================================
 -- EYE SCARE
@@ -505,34 +605,40 @@ thankYou.Visible = true
 if eyeScare
 	and eyeScare:IsA("GuiObject") then
 
-	eyeScare.Visible = true
-	eyeScare.ZIndex = 2
+	eyeScare.Visible =
+		true
+
+	eyeScare.ZIndex =
+		2
 
 end
 
 --==================================================
--- VIGNETTE EFFECTS
+-- VIGNETTE
 --==================================================
 
--- StaticLabel and ALL of its children are
--- deliberately excluded.
+-- StaticLabel is NOT touched.
 
-vignetteLabel.Visible = true
+vignetteLabel.Visible =
+	true
 
--- Important: never make the vignette background
--- opaque because that caused the white screen.
-vignetteLabel.BackgroundTransparency = 1
+vignetteLabel.BackgroundTransparency =
+	1
 
 if vignetteLabel:IsA("ImageLabel")
 	or vignetteLabel:IsA("ImageButton") then
 
-	vignetteLabel.ImageTransparency = 0
+	vignetteLabel.ImageTransparency =
+		0
+
 end
 
 if vignetteLabel:IsA("TextLabel")
 	or vignetteLabel:IsA("TextButton") then
 
-	vignetteLabel.TextTransparency = 0
+	vignetteLabel.TextTransparency =
+		0
+
 end
 
 for _, obj in ipairs(
@@ -540,25 +646,34 @@ for _, obj in ipairs(
 ) do
 
 	if obj:IsA("GuiObject") then
-		obj.Visible = true
-		obj.BackgroundTransparency = 1
+
+		obj.Visible =
+			true
+
+		obj.BackgroundTransparency =
+			1
+
 	end
 
 	if obj:IsA("ImageLabel")
 		or obj:IsA("ImageButton") then
 
-		obj.ImageTransparency = 0
+		obj.ImageTransparency =
+			0
+
 	end
 
 	if obj:IsA("TextLabel")
 		or obj:IsA("TextButton") then
 
-		obj.TextTransparency = 0
+		obj.TextTransparency =
+			0
+
 	end
 end
 
 --==================================================
--- KEEP VIGNETTE ENABLED FOREVER
+-- KEEP VIGNETTE ENABLED
 --==================================================
 
 local permanentVignetteLock
@@ -568,33 +683,44 @@ permanentVignetteLock =
 
 		if not vignetteLabel
 			or not vignetteLabel.Parent then
+
 			return
 		end
 
-		vignetteLabel.Visible = true
+		vignetteLabel.Visible =
+			true
 
-		-- Background MUST remain transparent.
-		vignetteLabel.BackgroundTransparency = 1
+		vignetteLabel.BackgroundTransparency =
+			1
 
 		for _, obj in ipairs(
 			vignetteLabel:GetDescendants()
 		) do
 
 			if obj:IsA("GuiObject") then
-				obj.Visible = true
-				obj.BackgroundTransparency = 1
+
+				obj.Visible =
+					true
+
+				obj.BackgroundTransparency =
+					1
+
 			end
 
 			if obj:IsA("ImageLabel")
 				or obj:IsA("ImageButton") then
 
-				obj.ImageTransparency = 0
+				obj.ImageTransparency =
+					0
+
 			end
 
 			if obj:IsA("TextLabel")
 				or obj:IsA("TextButton") then
 
-				obj.TextTransparency = 0
+				obj.TextTransparency =
+					0
+
 			end
 		end
 
@@ -622,7 +748,8 @@ local zoomOut =
 		),
 
 		{
-			Scale = originalScale
+			Scale =
+				originalScale
 		}
 	)
 
@@ -638,7 +765,8 @@ local blackOut =
 		),
 
 		{
-			BackgroundTransparency = 1
+			BackgroundTransparency =
+				1
 		}
 	)
 
@@ -648,58 +776,81 @@ blackOut:Play()
 blackOut.Completed:Wait()
 
 --==================================================
--- REMOVE TRANSITION ONLY
+-- REMOVE TRANSITION
 --==================================================
 
 blackScreen:Destroy()
 
-if createdScale and zoomScale then
+if createdScale
+	and zoomScale then
+
 	zoomScale:Destroy()
+
 else
+
 	zoomScale.Scale =
 		originalScale
+
 end
 
 --==================================================
--- KEEP NEW STATE
+-- FINAL HORROR STATE
 --==================================================
 
--- Character voice stays at 0.4.
-characterVoice.PlaybackSpeed = 0.4
+characterVoice.PlaybackSpeed =
+	0.4
 
--- Level 1 stays at 0.3.
-level1.PlaybackSpeed = 0.3
+level1.PlaybackSpeed =
+	0.3
 
--- ThankYou stays red and visible.
-thankYou.Visible = true
-thankYou.BackgroundTransparency = 0
-thankYou.BackgroundColor3 =
-	Color3.fromRGB(255, 0, 0)
+level1:Stop()
+level1.Volume = 0
 
--- Layer1 background stays transparent.
 if layer1Background
 	and layer1Background:IsA("GuiObject") then
 
-	layer1Background.BackgroundTransparency = 1
+	layer1Background.BackgroundTransparency =
+		1
+
 end
 
--- EyeScare stays enabled.
 if eyeScare
 	and eyeScare:IsA("GuiObject") then
 
-	eyeScare.Visible = true
-	eyeScare.ZIndex = 2
+	eyeScare.Visible =
+		true
+
+	eyeScare.ZIndex =
+		2
+
 end
 
--- Vignette remains permanently enabled.
-vignetteLabel.Visible = true
-vignetteLabel.BackgroundTransparency = 1
+vignetteLabel.Visible =
+	true
+
+vignetteLabel.BackgroundTransparency =
+	1
+
+-- Red background remains permanently.
+redBackground.Visible =
+	true
+
+redBackground.BackgroundTransparency =
+	0
+
+redBackground.BackgroundColor3 =
+	Color3.fromRGB(
+		255,
+		0,
+		0
+	)
 
 --==================================================
--- UNLOCK INPUT
+-- UNLOCK
 --==================================================
 
-interactionLocked = false
+interactionLocked =
+	false
 
 if guiLockConnection then
 	guiLockConnection:Disconnect()
