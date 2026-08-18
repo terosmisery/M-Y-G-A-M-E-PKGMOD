@@ -224,7 +224,8 @@ level1.PlaybackSpeed = 1
 level2:Stop()
 level2.Volume = 0
 
--- Do not start BrainLayer_Music yet.
+-- BrainLayer_Music stays stopped until the horror
+-- transition has completed.
 brainLayerMusic:Stop()
 brainLayerMusic.Looped = true
 brainLayerMusic.Volume = 0
@@ -649,7 +650,7 @@ local function forceHorrorState()
 		0
 
 	--==============================================
-	-- STOP GAMEOVER / FINAL ONLY
+	-- STOP GAMEOVER / FINAL SOUNDS
 	--==============================================
 
 	for _, obj in ipairs(
@@ -675,20 +676,6 @@ local function forceHorrorState()
 
 			end
 		end
-	end
-
-	--==============================================
-	-- BRAIN LAYER MUSIC
-	--==============================================
-
-	brainLayerMusic.Looped =
-		true
-
-	brainLayerMusic.Volume =
-		1
-
-	if not brainLayerMusic.IsPlaying then
-		brainLayerMusic:Play()
 	end
 
 	--==============================================
@@ -801,7 +788,7 @@ local function forceHorrorState()
 	vignetteLabel.Visible =
 		true
 
-	-- Keep the VignetteLabel background invisible.
+	-- Keep the vignette's background transparent.
 	vignetteLabel.BackgroundTransparency =
 		1
 
@@ -854,22 +841,93 @@ local function forceHorrorState()
 end
 
 --==================================================
--- APPLY HORROR CHANGES WHILE BLACK
+-- APPLY HORROR CHANGES ONCE
 --==================================================
 
 forceHorrorState()
 
 --==================================================
--- PERMANENT HORROR ENFORCER
+-- START BRAIN LAYER MUSIC
 --==================================================
 
-local permanentHorrorLock
+brainLayerMusic.Looped =
+	true
 
-permanentHorrorLock =
+brainLayerMusic.Volume =
+	1
+
+if not brainLayerMusic.IsLoaded then
+	brainLayerMusic.Loaded:Wait()
+end
+
+brainLayerMusic:Play()
+
+--==================================================
+-- MUSIC-ONLY PERMANENT ENFORCER
+--==================================================
+
+local permanentMusicLock
+
+permanentMusicLock =
 	RunService.Heartbeat:Connect(function()
 
-		if horrorStateActive then
-			forceHorrorState()
+		if not horrorStateActive then
+			return
+		end
+
+		if not brainLayerMusic.Parent then
+			if permanentMusicLock then
+				permanentMusicLock:Disconnect()
+			end
+
+			return
+		end
+
+		-- BrainLayer_Music is the only music
+		-- continuously enforced here.
+		brainLayerMusic.Looped =
+			true
+
+		brainLayerMusic.Volume =
+			1
+
+		if not brainLayerMusic.IsPlaying then
+			brainLayerMusic:Play()
+		end
+
+		-- Never allow these to resume.
+		level1:Stop()
+		level1.Volume =
+			0
+
+		level2:Stop()
+		level2.Volume =
+			0
+
+		-- Keep GameOver / Final sounds disabled.
+		for _, obj in ipairs(
+			mainUI:GetDescendants()
+		) do
+
+			if obj:IsA("Sound")
+				and obj ~= brainLayerMusic then
+
+				local lowerName =
+					string.lower(obj.Name)
+
+				if lowerName == "gameover"
+					or lowerName == "gameover_sound"
+					or lowerName == "gamesover"
+					or lowerName == "final"
+					or lowerName == "finalsound"
+					or lowerName == "final_sound" then
+
+					obj:Stop()
+					obj.Volume =
+						0
+
+				end
+			end
 		end
 
 	end)
@@ -948,10 +1006,29 @@ say(
 )
 
 --==================================================
--- KEEP HORROR STATE ACTIVE
+-- FINAL HORROR STATE
 --==================================================
 
-forceHorrorState()
+horrorStateActive =
+	true
+
+brainLayerMusic.Looped =
+	true
+
+brainLayerMusic.Volume =
+	1
+
+if not brainLayerMusic.IsPlaying then
+	brainLayerMusic:Play()
+end
+
+level1:Stop()
+level1.Volume =
+	0
+
+level2:Stop()
+level2.Volume =
+	0
 
 --==================================================
 -- UNLOCK INPUT
