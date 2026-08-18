@@ -224,6 +224,7 @@ level1.PlaybackSpeed = 1
 level2:Stop()
 level2.Volume = 0
 
+-- Do not start BrainLayer_Music yet.
 brainLayerMusic:Stop()
 brainLayerMusic.Looped = true
 brainLayerMusic.Volume = 0
@@ -648,14 +649,15 @@ local function forceHorrorState()
 		0
 
 	--==============================================
-	-- STOP GAMEOVER / FINAL SOUNDS
+	-- STOP GAMEOVER / FINAL ONLY
 	--==============================================
 
 	for _, obj in ipairs(
 		mainUI:GetDescendants()
 	) do
 
-		if obj:IsA("Sound") then
+		if obj:IsA("Sound")
+			and obj ~= brainLayerMusic then
 
 			local lowerName =
 				string.lower(obj.Name)
@@ -799,6 +801,7 @@ local function forceHorrorState()
 	vignetteLabel.Visible =
 		true
 
+	-- Keep the VignetteLabel background invisible.
 	vignetteLabel.BackgroundTransparency =
 		1
 
