@@ -1,0 +1,525 @@
+local Players = game:GetService("Players")
+local ContextActionService = game:GetService("ContextActionService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local pg = player:WaitForChild("PlayerGui")
+local mainUI = pg:WaitForChild("MainUI")
+
+local amb = mainUI:WaitForChild("Amb")
+local level1 = mainUI:WaitForChild("Level1")
+local level2 = mainUI:WaitForChild("Level2")
+
+--==================================================
+-- DIALOGUE SETUP
+--==================================================
+
+local baseFrame =
+	mainUI
+		:WaitForChild("SurfaceScreen")
+		:WaitForChild("BaseHolder")
+		:WaitForChild("BaseFrame")
+
+local layer1Group =
+	baseFrame:WaitForChild("Layer1Group")
+
+local dialogueLabel =
+	layer1Group:FindFirstChild("DialogueLabel", true)
+
+local dialogueFrame =
+	baseFrame
+		:WaitForChild("Layer2Group")
+		:WaitForChild("BaseGroup")
+		:WaitForChild("GameFrame")
+		:WaitForChild("DialogueFrame")
+
+local requestSpeech =
+	dialogueFrame:WaitForChild("RequestSpeech")
+
+local characterVoice =
+	mainUI:FindFirstChild("Character_Voice", true)
+
+if not dialogueLabel then
+	return
+end
+
+if not characterVoice or not characterVoice:IsA("Sound") then
+	return
+end
+
+--==================================================
+-- INPUT LOCK
+--==================================================
+
+local interactionLocked = true
+
+local lockedButtons = {}
+local lockedTextBoxes = {}
+
+local function enforceGuiLock()
+
+	for _, obj in ipairs(mainUI:GetDescendants()) do
+
+		if obj:IsA("GuiButton") then
+
+			if not lockedButtons[obj] then
+				lockedButtons[obj] = {
+					Active = obj.Active,
+					Selectable = obj.Selectable,
+					AutoButtonColor = obj.AutoButtonColor
+				}
+			end
+
+			obj.Active = false
+			obj.Selectable = false
+			obj.AutoButtonColor = false
+
+		elseif obj:IsA("TextBox") then
+
+			if not lockedTextBoxes[obj] then
+				lockedTextBoxes[obj] = {
+					Active = obj.Active,
+					TextEditable = obj.TextEditable
+				}
+			end
+
+			obj.Active = false
+			obj.TextEditable = false
+		end
+	end
+end
+
+local function restoreGui()
+
+	for obj, state in pairs(lockedButtons) do
+
+		if obj and obj.Parent then
+			obj.Active = state.Active
+			obj.Selectable = state.Selectable
+			obj.AutoButtonColor = state.AutoButtonColor
+		end
+	end
+
+	for obj, state in pairs(lockedTextBoxes) do
+
+		if obj and obj.Parent then
+			obj.Active = state.Active
+			obj.TextEditable = state.TextEditable
+		end
+	end
+
+	table.clear(lockedButtons)
+	table.clear(lockedTextBoxes)
+end
+
+enforceGuiLock()
+
+local guiLockConnection =
+	RunService.Heartbeat:Connect(function()
+
+		if interactionLocked then
+			enforceGuiLock()
+		end
+
+	end)
+
+--==================================================
+-- BLOCK MOUSE / TOUCH / GAMEPAD
+--==================================================
+
+local INPUT_LOCK_NAME =
+	"C9HZZ_IntroInputLock"
+
+ContextActionService:BindActionAtPriority(
+	INPUT_LOCK_NAME,
+
+	function()
+		return Enum.ContextActionResult.Sink
+	end,
+
+	false,
+
+	Enum.ContextActionPriority.High.Value,
+
+	Enum.UserInputType.MouseButton1,
+	Enum.UserInputType.MouseButton2,
+	Enum.UserInputType.MouseButton3,
+	Enum.UserInputType.Touch,
+
+	Enum.UserInputType.Gamepad1,
+	Enum.UserInputType.Gamepad2,
+	Enum.UserInputType.Gamepad3,
+	Enum.UserInputType.Gamepad4
+)
+
+--==================================================
+-- AUDIO INITIAL STATE
+--==================================================
+
+amb:Stop()
+
+level1:Stop()
+level1.Looped = true
+level1.Volume = 0
+level1.PlaybackSpeed = 1
+
+level2:Stop()
+level2.Volume = 0
+
+--==================================================
+-- SPEECH FUNCTION
+--==================================================
+
+local function say(text, duration, playbackSpeed)
+
+	text = tostring(text)
+	duration = duration or 3
+
+	local oldPlaybackSpeed =
+		characterVoice.PlaybackSpeed
+
+	if playbackSpeed then
+		characterVoice.PlaybackSpeed = playbackSpeed
+	end
+
+	dialogueLabel.AutoLocalize = false
+	dialogueLabel.Text = text
+	dialogueLabel.Parent.Visible = true
+
+	pcall(function()
+
+		requestSpeech:Invoke(
+			{
+				{
+					text,
+					{
+						IgnoreLocalize = true
+					}
+				}
+			},
+
+			false,
+			duration,
+			characterVoice
+		)
+
+	end)
+
+	if characterVoice.IsPlaying then
+		characterVoice:Stop()
+	end
+
+	characterVoice.PlaybackSpeed =
+		oldPlaybackSpeed
+
+	dialogueLabel.Text = ""
+	dialogueLabel.Parent.Visible = false
+
+	task.wait(0.15)
+end
+
+--==================================================
+-- INTRO
+--==================================================
+
+task.wait(0.5)
+
+say("Injecting the script.", 2)
+
+say("Initializing.", 1.5)
+
+--==================================================
+-- LEVEL 1 AUDIO
+--==================================================
+
+say("Starting Level 1 audio.", 2)
+
+level1.Volume = 0
+level1.PlaybackSpeed = 1
+level1.Looped = true
+level1:Play()
+
+say(
+	"Slowing Level 1 audio down to zero point five.",
+	2
+)
+
+local speedTween =
+	TweenService:Create(
+		level1,
+
+		TweenInfo.new(
+			3,
+			Enum.EasingStyle.Sine,
+			Enum.EasingDirection.Out
+		),
+
+		{
+			PlaybackSpeed = 0.5
+		}
+	)
+
+local volumeTween =
+	TweenService:Create(
+		level1,
+
+		TweenInfo.new(
+			2,
+			Enum.EasingStyle.Sine,
+			Enum.EasingDirection.Out
+		),
+
+		{
+			Volume = 1
+		}
+	)
+
+speedTween:Play()
+volumeTween:Play()
+
+speedTween.Completed:Wait()
+
+say(
+	"Level 1 audio is now playing at zero point five speed.",
+	2
+)
+
+--==================================================
+-- LEVEL 2
+--==================================================
+
+level2:Stop()
+level2.Volume = 0
+
+--==================================================
+-- EXISTING FINAL DIALOGUE
+--==================================================
+
+say("Initialization complete.", 2)
+
+say("This is a c9hzz mod.", 3)
+
+--==================================================
+-- NEW DIALOGUE
+--==================================================
+say(
+	"...",
+	2.5
+)
+
+say(
+	"Something feels different.",
+	2.5
+)
+
+say(
+	"Just wait a moment.",
+	2.5
+)
+
+say(
+	"Do not look away.",
+	2.5
+)
+
+say(
+	"Something is about to change.",
+	3
+)
+
+--==================================================
+-- BLACK SCREEN
+--==================================================
+
+local blackScreen =
+	Instance.new("Frame")
+
+blackScreen.Name =
+	"C9HZZTransition"
+
+blackScreen.BackgroundColor3 =
+	Color3.new(0, 0, 0)
+
+blackScreen.BackgroundTransparency = 1
+
+blackScreen.BorderSizePixel = 0
+
+blackScreen.Size =
+	UDim2.fromScale(1, 1)
+
+blackScreen.Position =
+	UDim2.fromScale(0, 0)
+
+blackScreen.ZIndex = 10000
+
+blackScreen.Visible = true
+
+blackScreen.Parent = baseFrame
+
+--==================================================
+-- ZOOM
+--==================================================
+
+local zoomScale =
+	baseFrame:FindFirstChild(
+		"C9HZZTransitionScale"
+	)
+
+local createdScale = false
+
+if not zoomScale then
+
+	zoomScale = Instance.new("UIScale")
+
+	zoomScale.Name =
+		"C9HZZTransitionScale"
+
+	zoomScale.Scale = 1
+
+	zoomScale.Parent =
+		baseFrame
+
+	createdScale = true
+end
+
+local originalScale =
+	zoomScale.Scale
+
+--==================================================
+-- ZOOM IN
+--==================================================
+
+local zoomIn =
+	TweenService:Create(
+
+		zoomScale,
+
+		TweenInfo.new(
+			2,
+			Enum.EasingStyle.Sine,
+			Enum.EasingDirection.In
+		),
+
+		{
+			Scale = originalScale * 1.12
+		}
+	)
+
+zoomIn:Play()
+
+--==================================================
+-- FADE TO BLACK
+--==================================================
+
+local blackTween =
+	TweenService:Create(
+
+		blackScreen,
+
+		TweenInfo.new(
+			2,
+			Enum.EasingStyle.Sine,
+			Enum.EasingDirection.In
+		),
+
+		{
+			BackgroundTransparency = 0
+		}
+	)
+
+blackTween:Play()
+
+zoomIn.Completed:Wait()
+
+--==================================================
+-- BLACK STATE
+--==================================================
+
+blackScreen.BackgroundTransparency = 0
+
+--==================================================
+-- STOP HERE FOR NOW
+--==================================================
+
+-- This is where we will eventually:
+--
+-- 1. Change the character.
+-- 2. Change the face.
+-- 3. Change SecretLabel.
+-- 4. Change whatever other UI/effects we want.
+-- 5. Keep the screen black during those changes.
+--
+-- Then we will:
+--
+-- 6. Zoom back out.
+-- 7. Fade the black screen away.
+--
+-- Nothing is changed here yet.
+
+task.wait(1)
+
+--==================================================
+-- TEMPORARY CLEANUP
+--==================================================
+
+local zoomOut =
+	TweenService:Create(
+
+		zoomScale,
+
+		TweenInfo.new(
+			1.5,
+			Enum.EasingStyle.Sine,
+			Enum.EasingDirection.Out
+		),
+
+		{
+			Scale = originalScale
+		}
+	)
+
+local blackOut =
+	TweenService:Create(
+
+		blackScreen,
+
+		TweenInfo.new(
+			1.5,
+			Enum.EasingStyle.Sine,
+			Enum.EasingDirection.Out
+		),
+
+		{
+			BackgroundTransparency = 1
+		}
+	)
+
+zoomOut:Play()
+blackOut:Play()
+
+blackOut.Completed:Wait()
+
+blackScreen:Destroy()
+
+if createdScale and zoomScale then
+	zoomScale:Destroy()
+else
+	zoomScale.Scale = originalScale
+end
+
+--==================================================
+-- UNLOCK
+--==================================================
+
+interactionLocked = false
+
+if guiLockConnection then
+	guiLockConnection:Disconnect()
+end
+
+ContextActionService:UnbindAction(
+	INPUT_LOCK_NAME
+)
+
+restoreGui()
